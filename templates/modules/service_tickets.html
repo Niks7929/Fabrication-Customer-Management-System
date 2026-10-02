@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Customer Service Complaints & Maintenance | Fabrication CMS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+        <div>
+            <h1 class="text-2xl font-extrabold text-white flex items-center">
+                <i class="fa-solid fa-headset text-orange-400 me-2.5"></i> Post-Installation Service & Complaint Tickets
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Manage customer feedback, maintenance requests, touch-up painting & warranty servicing.</p>
+        </div>
+    </div>
+
+    <!-- Service Tickets Table -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="text-[11px] uppercase bg-slate-950 text-slate-400 border-b border-slate-800">
+                    <tr>
+                        <th class="py-3.5 px-4">Ticket #</th>
+                        <th class="py-3.5 px-4">Customer & Phone</th>
+                        <th class="py-3.5 px-4">Subject</th>
+                        <th class="py-3.5 px-4">Priority</th>
+                        <th class="py-3.5 px-4">Status</th>
+                        <th class="py-3.5 px-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for ticket in tickets %}
+                        <tr class="hover:bg-slate-850">
+                            <td class="py-3.5 px-4 font-mono font-bold text-amber-400">{{ ticket.ticket_code }}</td>
+                            <td class="py-3.5 px-4">
+                                <div class="font-bold text-white">{{ ticket.customer.contact_person }}</div>
+                                <div class="text-[11px] text-slate-400"><i class="fa-solid fa-phone me-1"></i> {{ ticket.customer.phone }}</div>
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <div class="font-semibold text-slate-100">{{ ticket.title }}</div>
+                                <div class="text-[11px] text-slate-500 truncate max-w-xs">{{ ticket.description }}</div>
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <span class="px-2 py-0.5 rounded font-bold
+                                    {% if ticket.priority == 'High' %} bg-rose-500/20 text-rose-300 border border-rose-500/30
+                                    {% else %} bg-slate-800 text-slate-300 {% endif %}">
+                                    {{ ticket.priority }}
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <span class="px-2.5 py-1 rounded text-[11px] font-bold
+                                    {% if ticket.status == 'Resolved' %} bg-emerald-500/20 text-emerald-300 border border-emerald-500/30
+                                    {% else %} bg-orange-500/20 text-orange-300 border border-orange-500/30 {% endif %}">
+                                    {{ ticket.status }}
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <form action="{{ url_for('update_ticket_status', ticket_id=ticket.id) }}" method="POST" class="flex items-center space-x-2">
+                                    <select name="status" class="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[11px] text-slate-200">
+                                        <option value="Open" {% if ticket.status == 'Open' %}selected{% endif %}>Open</option>
+                                        <option value="In Progress" {% if ticket.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                                        <option value="Resolved" {% if ticket.status == 'Resolved' %}selected{% endif %}>Resolved</option>
+                                    </select>
+                                    <button type="submit" class="px-2 py-1 bg-amber-500 text-slate-950 font-bold rounded text-[11px]">Save</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

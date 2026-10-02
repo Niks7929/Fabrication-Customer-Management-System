@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}System Analytics & Reports | Fabrication CMS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+        <div>
+            <h1 class="text-2xl font-extrabold text-white flex items-center">
+                <i class="fa-solid fa-chart-line text-rose-400 me-2.5"></i> Fabrication Business Intelligence & Reports
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Customer-wise, Job-wise, Quotation conversion, Profit Margins, Material Consumption & Pending Dues.</p>
+        </div>
+        <button onclick="window.print()" class="px-4 py-2.5 bg-slate-800 border border-slate-700 text-amber-400 font-bold rounded-xl text-xs hover:bg-slate-700 shadow-lg transition flex items-center">
+            <i class="fa-solid fa-print me-1.5"></i> Export Report Summary
+        </button>
+    </div>
+
+    <!-- KPI Summary Row -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Total Contract Revenue</span>
+            <div class="text-2xl font-extrabold text-white mt-2">₹{{ "{:,.2f}".format(total_contract_value) }}</div>
+            <span class="text-[11px] text-emerald-400 font-medium mt-1 inline-block"><i class="fa-solid fa-circle-check me-1"></i> Gross Booked Revenue</span>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Estimated Gross Profit (22.5%)</span>
+            <div class="text-2xl font-extrabold text-emerald-400 mt-2">₹{{ "{:,.2f}".format(total_profit) }}</div>
+            <span class="text-[11px] text-emerald-400 font-medium mt-1 inline-block"><i class="fa-solid fa-arrow-trend-up me-1"></i> Estimated Margin</span>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Total Payments Received</span>
+            <div class="text-2xl font-extrabold text-teal-400 mt-2">₹{{ "{:,.2f}".format(total_received) }}</div>
+            <span class="text-[11px] text-teal-400 font-medium mt-1 inline-block"><i class="fa-solid fa-building-columns me-1"></i> Cleared Bank/Cash</span>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Outstanding Dues</span>
+            <div class="text-2xl font-extrabold text-rose-400 mt-2">₹{{ "{:,.2f}".format(total_pending) }}</div>
+            <span class="text-[11px] text-rose-400 font-medium mt-1 inline-block"><i class="fa-solid fa-clock me-1"></i> Pending Receivable</span>
+        </div>
+    </div>
+
+    <!-- Job-wise Profit & Cost Breakdown Table -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <h3 class="text-base font-bold text-white flex items-center border-b border-slate-800 pb-3">
+            <i class="fa-solid fa-scale-balanced text-amber-400 me-2"></i> Project-wise Cost & Estimated Profit Margin Analysis
+        </h3>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="text-[11px] uppercase bg-slate-950 text-slate-400 border-b border-slate-800">
+                    <tr>
+                        <th class="py-3 px-4">Job Code</th>
+                        <th class="py-3 px-4">Project Title</th>
+                        <th class="py-3 px-4">Customer</th>
+                        <th class="py-3 px-4">Contract Value</th>
+                        <th class="py-3 px-4">Est. Material Cost</th>
+                        <th class="py-3 px-4">Est. Labour Cost</th>
+                        <th class="py-3 px-4">Estimated Margin</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for job in jobs %}
+                        <tr class="hover:bg-slate-850">
+                            <td class="py-3 px-4 font-mono font-bold text-amber-400">{{ job.job_code }}</td>
+                            <td class="py-3 px-4 font-semibold text-white">{{ job.project_name }}</td>
+                            <td class="py-3 px-4 text-slate-300">{{ job.customer.contact_person }}</td>
+                            <td class="py-3 px-4 font-mono font-bold text-white">₹{{ "{:,.2f}".format(job.total_contract_value) }}</td>
+                            <td class="py-3 px-4 font-mono text-slate-400">₹{{ "{:,.2f}".format(job.total_contract_value * 0.52) }}</td>
+                            <td class="py-3 px-4 font-mono text-slate-400">₹{{ "{:,.2f}".format(job.total_contract_value * 0.18) }}</td>
+                            <td class="py-3 px-4 font-mono font-bold text-emerald-400">₹{{ "{:,.2f}".format(job.total_contract_value * 0.225) }} (22.5%)</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

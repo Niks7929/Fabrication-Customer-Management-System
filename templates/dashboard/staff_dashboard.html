@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Production Staff Dashboard | Fabrication CMS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    
+    <!-- Staff Greeting Card -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center justify-center text-xl font-bold">
+                    <i class="fa-solid fa-hard-hat"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-extrabold text-white">{{ current_user.full_name }}</h1>
+                    <p class="text-xs text-slate-400 font-mono mt-0.5"><i class="fa-solid fa-id-badge me-1 text-amber-400"></i> Production Staff / Workshop Employee | @{{ current_user.username }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center space-x-3">
+            <span class="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-xs font-bold">
+                <i class="fa-solid fa-circle text-emerald-400 text-[10px] me-1 animate-pulse"></i> Active Shift
+            </span>
+        </div>
+    </div>
+
+    <!-- Assigned Workshop Job Cards Section -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+        <div class="border-b border-slate-800 pb-4 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-white flex items-center">
+                <i class="fa-solid fa-clipboard-list text-amber-500 me-2.5"></i> Assigned Workshop Job Cards
+            </h2>
+            <span class="text-xs text-slate-400">Cutting → Welding → Grinding → Drilling → Painting → Assembly → QC</span>
+        </div>
+
+        {% if assigned_cards %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {% for card in assigned_cards %}
+                    <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-900 pb-3">
+                            <div>
+                                <span class="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded border border-amber-500/30">
+                                    {{ card.card_code }}
+                                </span>
+                                <h3 class="text-base font-bold text-white mt-1">{{ card.stage_name }}</h3>
+                                <p class="text-xs text-slate-400">Job Order: <span class="text-white font-semibold">{{ card.job.project_name }}</span> ({{ card.job.job_code }})</p>
+                            </div>
+                            <span class="px-2.5 py-1 rounded text-xs font-bold
+                                {% if card.status == 'Completed' %} bg-emerald-500/20 text-emerald-300 border border-emerald-500/30
+                                {% elif card.status == 'In Progress' %} bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse
+                                {% else %} bg-slate-800 text-slate-400 {% endif %}">
+                                {{ card.status }}
+                            </span>
+                        </div>
+
+                        {% if card.instructions %}
+                            <div class="text-xs text-slate-300 bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                                <span class="font-bold text-slate-400 block uppercase text-[10px] mb-1"><i class="fa-solid fa-circle-info text-amber-400 me-1"></i> Technical Instructions:</span>
+                                {{ card.instructions }}
+                            </div>
+                        {% endif %}
+
+                        <!-- Stage Progress Slider -->
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between text-xs font-semibold">
+                                <span class="text-slate-400">Completion Status</span>
+                                <span class="text-amber-400 font-mono">{{ card.completion_pct }}%</span>
+                            </div>
+                            <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-800">
+                                <div class="h-2.5 bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full transition-all duration-500" style="width: {{ card.completion_pct }}%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Update Card Status Form -->
+                        <form action="{{ url_for('update_job_card_status', card_id=card.id) }}" method="POST" class="pt-2 flex items-center space-x-2">
+                            <select name="status" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200">
+                                <option value="Pending" {% if card.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                <option value="In Progress" {% if card.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                                <option value="Completed" {% if card.status == 'Completed' %}selected{% endif %}>Completed</option>
+                            </select>
+                            <input type="number" name="completion_pct" value="{{ card.completion_pct }}" min="0" max="100" class="w-20 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-amber-400 font-bold font-mono text-center">
+                            <span class="text-xs text-slate-400">%</span>
+                            <button type="submit" class="px-4 py-2 bg-amber-500 text-slate-950 font-bold rounded-xl text-xs hover:bg-amber-400 transition">
+                                Update
+                            </button>
+                        </form>
+
+                        <!-- Attach Photo Button -->
+                        <div class="pt-2 border-t border-slate-900 flex justify-end">
+                            <a href="{{ url_for('job_detail', job_id=card.job_id) }}" class="text-xs text-amber-400 hover:underline font-bold">
+                                Upload Stage Photo & View Drawings &rarr;
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-sm text-slate-400 text-center py-6">No specific job cards assigned yet. Check active production orders below.</p>
+        {% endif %}
+    </div>
+
+    <!-- Active Production Jobs List -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <h3 class="text-base font-bold text-white flex items-center border-b border-slate-800 pb-3">
+            <i class="fa-solid fa-gears text-emerald-400 me-2"></i> All Active Workshop Fabrication Projects
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for job in active_jobs %}
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-mono font-bold text-amber-400">{{ job.job_code }}</span>
+                        <span class="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded text-[11px] font-semibold">{{ job.status }}</span>
+                    </div>
+                    <div class="font-bold text-white text-sm">{{ job.project_name }}</div>
+                    <div class="text-xs text-slate-400">Site: {{ job.site_address or 'Workshop' }}</div>
+                    <div class="pt-2 text-right">
+                        <a href="{{ url_for('job_detail', job_id=job.id) }}" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded text-xs font-bold">
+                            View Drawings & Log Work &rarr;
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

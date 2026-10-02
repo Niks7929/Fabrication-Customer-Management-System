@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Enquiry Management & Site Visits | Fabrication CMS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+        <div>
+            <h1 class="text-2xl font-extrabold text-white flex items-center">
+                <i class="fa-solid fa-clipboard-question text-blue-400 me-2.5"></i> Fabrication Enquiry Management
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Record incoming requests, schedule site visits, log field measurements & convert to cost quotations.</p>
+        </div>
+        <button onclick="document.getElementById('addEnquiryModal').classList.remove('hidden')" class="px-4 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold rounded-xl text-xs hover:from-blue-400 shadow-lg transition flex items-center">
+            <i class="fa-solid fa-plus me-1.5"></i> Register New Enquiry
+        </button>
+    </div>
+
+    <!-- Enquiries Table -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="text-[11px] uppercase bg-slate-950 text-slate-400 border-b border-slate-800">
+                    <tr>
+                        <th class="py-3.5 px-4">Code</th>
+                        <th class="py-3.5 px-4">Customer & Phone</th>
+                        <th class="py-3.5 px-4">Project Title</th>
+                        <th class="py-3.5 px-4">Fabrication Type</th>
+                        <th class="py-3.5 px-4">Est. Budget</th>
+                        <th class="py-3.5 px-4">Status</th>
+                        <th class="py-3.5 px-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for enq in enquiries %}
+                        <tr class="hover:bg-slate-850">
+                            <td class="py-3.5 px-4 font-mono font-bold text-amber-400">{{ enq.enquiry_code }}</td>
+                            <td class="py-3.5 px-4">
+                                <div class="font-bold text-white">{{ enq.customer.contact_person }}</div>
+                                <div class="text-[11px] text-slate-400"><i class="fa-solid fa-phone me-1"></i> {{ enq.customer.phone }}</div>
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <div class="font-semibold text-slate-100">{{ enq.project_name }}</div>
+                                <div class="text-[11px] text-slate-500 truncate max-w-xs">{{ enq.site_location or 'N/A' }}</div>
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <span class="px-2.5 py-1 bg-slate-950 border border-slate-800 rounded text-slate-200 font-medium">
+                                    {{ enq.fabrication_type }}
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-4 font-mono font-bold text-emerald-400">
+                                ₹{{ "{:,.0f}".format(enq.budget_estimate or 0) }}
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <span class="px-2.5 py-1 rounded text-[11px] font-bold
+                                    {% if enq.status == 'Converted to Order' %} bg-emerald-500/20 text-emerald-300 border border-emerald-500/30
+                                    {% elif enq.status == 'Quotation Generated' %} bg-purple-500/20 text-purple-300 border border-purple-500/30
+                                    {% elif enq.status == 'Site Visit Scheduled' %} bg-amber-500/20 text-amber-300 border border-amber-500/30
+                                    {% else %} bg-blue-500/20 text-blue-300 border border-blue-500/30 {% endif %}">
+                                    {{ enq.status }}
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-4 space-x-1">
+                                <a href="{{ url_for('quotation_builder') }}?enquiry_id={{ enq.id }}" class="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-500 rounded font-bold transition">
+                                    <i class="fa-solid fa-calculator me-1"></i> Create Quote
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal: Add Enquiry -->
+<div id="addEnquiryModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="text-base font-bold text-white"><i class="fa-solid fa-clipboard-question text-blue-400 me-2"></i> Register New Fabrication Enquiry</h3>
+            <button onclick="document.getElementById('addEnquiryModal').classList.add('hidden')" class="text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form action="{{ url_for('enquiries_list') }}" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Select Customer *</label>
+                <select name="customer_id" required class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-amber-500">
+                    {% for cust in customers %}
+                        <option value="{{ cust.id }}">{{ cust.customer_code }} - {{ cust.company_name or cust.contact_person }} ({{ cust.phone }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Project Name *</label>
+                    <input type="text" name="project_name" required placeholder="e.g. MS Heavy Truss Shed" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Fabrication Material</label>
+                    <select name="fabrication_type" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-amber-500">
+                        <option value="MS Heavy Structural">MS Heavy Structural</option>
+                        <option value="MS Light Fabrication">MS Light Fabrication</option>
+                        <option value="SS 304 Decorative">SS 304 Decorative</option>
+                        <option value="SS 316 Industrial">SS 316 Industrial</option>
+                        <option value="Aluminium Structural">Aluminium Structural</option>
+                        <option value="CNC Laser Cutting">CNC Laser Cutting</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Category</label>
+                    <select name="project_category" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-amber-500">
+                        <option value="Commercial">Commercial</option>
+                        <option value="Industrial">Industrial</option>
+                        <option value="Residential">Residential</option>
+                        <option value="Government">Government</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Estimated Budget (₹)</label>
+                    <input type="number" name="budget_estimate" placeholder="250000" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-amber-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Site Location Address</label>
+                <input type="text" name="site_location" placeholder="Plot 12, Industrial Area, Pune" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-amber-500">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Detailed Description & Specifications</label>
+                <textarea name="description" rows="3" placeholder="Provide dimensions, length, height, load specs..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-amber-500"></textarea>
+            </div>
+
+            <div class="text-right pt-2">
+                <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold rounded-xl text-xs hover:from-blue-400 transition">
+                    Save Enquiry
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

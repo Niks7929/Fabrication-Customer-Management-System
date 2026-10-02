@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}Fabrication Estimation & Quotation Builder | Fabrication CMS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+        <div>
+            <h1 class="text-2xl font-extrabold text-white flex items-center">
+                <i class="fa-solid fa-calculator text-purple-400 me-2.5"></i> Precision Fabrication Estimation & Quotation Builder
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Itemized cost matrix: Material specs (Type, Grade, Thickness, Weight) + Labour + Wastage % + Transport + Erection + GST 18%.</p>
+        </div>
+        <div class="flex items-center space-x-2">
+            <span class="px-3 py-1 bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-full text-xs font-mono font-bold">
+                Auto-Calculation Active
+            </span>
+        </div>
+    </div>
+
+    <!-- Quotation Form -->
+    <form action="{{ url_for('save_quotation') }}" method="POST" id="quoteForm" class="space-y-6">
+        
+        <!-- Section 1: Customer & Enquiry Links -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+            <h2 class="text-sm font-bold uppercase text-amber-400 tracking-wider flex items-center">
+                <i class="fa-solid fa-user-check me-2"></i> Client & Quotation Metadata
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Select Customer *</label>
+                    <select name="customer_id" id="customer_id" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 text-sm focus:outline-none focus:border-amber-500">
+                        {% for cust in customers %}
+                            <option value="{{ cust.id }}" {% if selected_enquiry and selected_enquiry.customer_id == cust.id %}selected{% endif %}>
+                                {{ cust.customer_code }} - {{ cust.company_name or cust.contact_person }} ({{ cust.phone }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Linked Enquiry (Optional)</label>
+                    <select name="enquiry_id" id="enquiry_id" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 text-sm focus:outline-none focus:border-amber-500">
+                        <option value="">-- Direct Quotation --</option>
+                        {% for enq in enquiries %}
+                            <option value="{{ enq.id }}" {% if selected_enquiry and selected_enquiry.id == enq.id %}selected{% endif %}>
+                                {{ enq.enquiry_code }} - {{ enq.project_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Quotation Validity Date</label>
+                    <input type="date" name="valid_until" value="{{ default_valid_date }}" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 text-sm focus:outline-none focus:border-amber-500">
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Fabrication Itemized Technical Specs -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h2 class="text-sm font-bold uppercase text-amber-400 tracking-wider flex items-center">
+                    <i class="fa-solid fa-cubes-stacked me-2"></i> Fabrication Line Items & Technical Specs
+                </h2>
+                <button type="button" onclick="addItemRow()" class="px-3 py-1.5 bg-amber-500 text-slate-950 font-bold rounded-lg text-xs hover:bg-amber-400 transition">
+                    <i class="fa-solid fa-plus me-1"></i> Add Another Item
+                </button>
+            </div>
+
+            <div id="itemsContainer" class="space-y-4">
+                <!-- Item Row Template 0 -->
+                <div class="item-row bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 relative">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <div class="md:col-span-2">
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Item Description / Component Name *</label>
+                            <input type="text" name="item_name[]" required placeholder="e.g. MS Heavy ISMB Column Frame" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-xs focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Material Type</label>
+                            <select name="material_type[]" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-xs focus:outline-none focus:border-amber-500">
+                                <option value="MS">Mild Steel (MS)</option>
+                                <option value="SS 304">Stainless Steel (SS 304)</option>
+                                <option value="SS 316">Stainless Steel (SS 316)</option>
+                                <option value="Aluminium">Aluminium</option>
+                                <option value="Brass">Brass</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Grade</label>
+                            <input type="text" name="material_grade[]" placeholder="IS 2022 / 304" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-xs focus:outline-none focus:border-amber-500">
+                        </div>
+                    </div>
+
+                    <!-- Dimensions & Weights -->
+                    <div class="grid grid-cols-2 sm:grid-cols-6 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-400 uppercase mb-1">Thickness (mm)</label>
+                            <input type="number" step="0.1" name="thickness_mm[]" placeholder="6.0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 text-xs focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-400 uppercase mb-1">Length (mm)</label>
+                            <input type="number" step="1" name="length_mm[]" placeholder="2500" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 text-xs focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-400 uppercase mb-1">Width (mm)</label>
+                            <input type="number" step="1" name="width_mm[]" placeholder="1250" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 text-xs focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-400 uppercase mb-1">Weight (Kg)</label>
+                            <input type="number" step="0.1" name="weight_kg[]" placeholder="120" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 text-xs focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-400 uppercase mb-1">Qty</label>
+                            <input type="number" step="1" name="quantity[]" value="1" oninput="calculateTotals()" class="item-qty w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 text-xs font-bold focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-400 uppercase mb-1">Item Cost (₹)</label>
+                            <input type="number" step="0.01" name="total_price[]" value="5000" oninput="calculateTotals()" class="item-price w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-amber-400 text-xs font-mono font-bold focus:outline-none focus:border-amber-500">
+                        </div>
+                    </div>
+
+                    <!-- Welding & Finishing Details -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-400 uppercase mb-1">Welding Details</label>
+                            <input type="text" name="welding_details[]" placeholder="Full MIG weld / TIG argon" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 text-xs focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-400 uppercase mb-1">Finishing</label>
+                            <input type="text" name="finishing_details[]" placeholder="Buffing / Mirror Polish" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 text-xs focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-400 uppercase mb-1">Painting / Coating</label>
+                            <input type="text" name="painting_details[]" placeholder="2 Coats Red Oxide + Epoxy" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 text-xs focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Cost Aggregation, Labour, Transport, GST & Margin -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+            <h2 class="text-sm font-bold uppercase text-amber-400 tracking-wider flex items-center">
+                <i class="fa-solid fa-coins me-2"></i> Fabrication Overhead & Tax Calculation Matrix
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Raw Material Cost (₹)</label>
+                    <input type="number" step="0.01" name="material_cost" id="material_cost" value="10000" oninput="calculateTotals()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 text-sm font-mono focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Labour Charge (₹)</label>
+                    <input type="number" step="0.01" name="labour_cost" id="labour_cost" value="3000" oninput="calculateTotals()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 text-sm font-mono focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Cutting / Machining (₹)</label>
+                    <input type="number" step="0.01" name="machining_cutting_cost" id="machining_cutting_cost" value="1000" oninput="calculateTotals()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 text-sm font-mono focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Painting / Finishing (₹)</label>
+                    <input type="number" step="0.01" name="finishing_painting_cost" id="finishing_painting_cost" value="1500" oninput="calculateTotals()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 text-sm font-mono focus:outline-none focus:border-amber-500">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Transportation Charge (₹)</label>
+                    <input type="number" step="0.01" name="transportation_cost" id="transportation_cost" value="1200" oninput="calculateTotals()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 text-sm font-mono focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">On-Site Erection (₹)</label>
+                    <input type="number" step="0.01" name="installation_cost" id="installation_cost" value="2000" oninput="calculateTotals()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 text-sm font-mono focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Estimated Wastage (₹)</label>
+                    <input type="number" step="0.01" name="wastage_cost" id="wastage_cost" value="800" oninput="calculateTotals()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-slate-100 text-sm font-mono focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">GST Tax Rate %</label>
+                    <input type="number" step="0.1" name="gst_rate" id="gst_rate" value="18.0" oninput="calculateTotals()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-teal-400 font-bold text-sm font-mono focus:outline-none focus:border-amber-500">
+                </div>
+            </div>
+
+            <!-- Grand Totals Display Panel -->
+            <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                <div>
+                    <span class="text-xs font-semibold text-slate-400 uppercase">Subtotal Excl. Tax</span>
+                    <div id="subtotal_display" class="text-2xl font-extrabold text-white mt-1">₹0.00</div>
+                </div>
+                <div>
+                    <span class="text-xs font-semibold text-slate-400 uppercase">GST Amount (18%)</span>
+                    <div id="gst_display" class="text-2xl font-extrabold text-teal-400 mt-1">₹0.00</div>
+                </div>
+                <div>
+                    <span class="text-xs font-semibold text-amber-400 uppercase">Grand Total Cost</span>
+                    <div id="total_display" class="text-3xl font-extrabold text-amber-400 mt-1">₹0.00</div>
+                </div>
+                <div class="text-right">
+                    <button type="submit" class="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-extrabold rounded-xl hover:from-amber-400 shadow-xl shadow-amber-500/20 transition text-sm">
+                        <i class="fa-solid fa-file-signature me-2"></i> Generate & Save Quotation
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function calculateTotals() {
+        let mat = parseFloat(document.getElementById('material_cost').value) || 0;
+        let lab = parseFloat(document.getElementById('labour_cost').value) || 0;
+        let cut = parseFloat(document.getElementById('machining_cutting_cost').value) || 0;
+        let fin = parseFloat(document.getElementById('finishing_painting_cost').value) || 0;
+        let trn = parseFloat(document.getElementById('transportation_cost').value) || 0;
+        let ins = parseFloat(document.getElementById('installation_cost').value) || 0;
+        let wst = parseFloat(document.getElementById('wastage_cost').value) || 0;
+        let gstRate = parseFloat(document.getElementById('gst_rate').value) || 18.0;
+
+        let subtotal = mat + lab + cut + fin + trn + ins + wst;
+        let gstAmount = (subtotal * gstRate) / 100.0;
+        let total = subtotal + gstAmount;
+
+        document.getElementById('subtotal_display').innerText = '₹' + subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('gst_display').innerText = '₹' + gstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('total_display').innerText = '₹' + total.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    function addItemRow() {
+        const container = document.getElementById('itemsContainer');
+        const firstRow = container.querySelector('.item-row');
+        const clone = firstRow.cloneNode(true);
+        // Clear input values in clone
+        clone.querySelectorAll('input').forEach(input => {
+            if (input.name === 'quantity[]') input.value = 1;
+            else if (input.name === 'total_price[]') input.value = 0;
+            else input.value = '';
+        });
+        container.appendChild(clone);
+        calculateTotals();
+    }
+
+    // Initial calculation on load
+    document.addEventListener('DOMContentLoaded', calculateTotals);
+</script>
+{% endblock %}

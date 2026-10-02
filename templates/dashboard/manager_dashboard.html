@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Manager Control Center | Fabrication CMS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    
+    <!-- Top Greeting & Quick Actions Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+        <div>
+            <div class="flex items-center space-x-2">
+                <h1 class="text-2xl font-extrabold text-white">Project Manager Control Dashboard</h1>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">Manager Role</span>
+            </div>
+            <p class="text-slate-400 text-sm mt-1">Customer enquiries, site visit schedules, cost estimations, work orders & erection site tracking.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ url_for('enquiries_list') }}" class="px-4 py-2.5 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-300 hover:bg-blue-600/30 text-xs font-bold transition flex items-center">
+                <i class="fa-solid fa-plus me-1.5"></i> New Enquiry
+            </a>
+            <a href="{{ url_for('quotation_builder') }}" class="px-4 py-2.5 rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-300 hover:bg-purple-600/30 text-xs font-bold transition flex items-center">
+                <i class="fa-solid fa-calculator me-1.5"></i> Build Quotation
+            </a>
+            <a href="{{ url_for('customers_list') }}" class="px-4 py-2.5 rounded-xl bg-amber-600/20 border border-amber-500/30 text-amber-300 hover:bg-amber-600/30 text-xs font-bold transition flex items-center">
+                <i class="fa-solid fa-user-plus me-1.5"></i> Customer Directory
+            </a>
+        </div>
+    </div>
+
+    <!-- Manager KPI Summary Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">New Enquiries</span>
+                <div class="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
+                    <i class="fa-solid fa-clipboard-question"></i>
+                </div>
+            </div>
+            <div class="text-3xl font-extrabold text-white mt-3">{{ total_enquiries }}</div>
+            <span class="text-[11px] text-blue-400 mt-1 inline-block font-medium">Site Visits Pending</span>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Quotations Sent</span>
+                <div class="w-9 h-9 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
+                    <i class="fa-solid fa-calculator"></i>
+                </div>
+            </div>
+            <div class="text-3xl font-extrabold text-white mt-3">{{ total_quotations }}</div>
+            <span class="text-[11px] text-purple-400 mt-1 inline-block font-medium">Under Client Review</span>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Work Orders</span>
+                <div class="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                    <i class="fa-solid fa-gears"></i>
+                </div>
+            </div>
+            <div class="text-3xl font-extrabold text-emerald-400 mt-3">{{ active_jobs }}</div>
+            <span class="text-[11px] text-emerald-400 mt-1 inline-block font-medium">Workshop & Site Fit</span>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Registered Clients</span>
+                <div class="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+            </div>
+            <div class="text-3xl font-extrabold text-white mt-3">{{ total_customers }}</div>
+            <span class="text-[11px] text-amber-400 mt-1 inline-block font-medium">Companies & Individuals</span>
+        </div>
+    </div>
+
+    <!-- Active Production Jobs Overview -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div>
+                <h2 class="text-lg font-bold text-white flex items-center">
+                    <i class="fa-solid fa-industry text-amber-500 me-2"></i> Workshop & Site Work Orders
+                </h2>
+                <p class="text-xs text-slate-400 mt-0.5">Assign staff, track 7 production stages & monitor installation completion</p>
+            </div>
+            <a href="{{ url_for('jobs_list') }}" class="text-xs text-amber-400 hover:underline font-semibold">View All Work Orders &rarr;</a>
+        </div>
+
+        <div class="space-y-4">
+            {% for job in recent_jobs %}
+                <div class="bg-slate-950 rounded-xl p-5 border border-slate-800 space-y-3">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                        <div class="flex items-center space-x-3">
+                            <span class="font-mono text-xs font-bold px-2.5 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                                {{ job.job_code }}
+                            </span>
+                            <h3 class="text-base font-bold text-white">{{ job.project_name }}</h3>
+                        </div>
+                        <div class="flex items-center space-x-3 text-xs">
+                            <span class="text-slate-400"><i class="fa-solid fa-user me-1"></i> {{ job.customer.contact_person }}</span>
+                            <a href="{{ url_for('job_detail', job_id=job.id) }}" class="px-3 py-1 bg-amber-500 text-slate-950 hover:bg-amber-400 rounded font-bold">
+                                Manage Job &rarr;
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

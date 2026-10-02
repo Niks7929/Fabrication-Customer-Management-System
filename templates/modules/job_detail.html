@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Job Card {{ job.job_code }} | Fabrication CMS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    
+    <!-- Top Job Header Card -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="space-y-1">
+            <div class="flex items-center space-x-3">
+                <span class="px-3 py-1 bg-amber-500/20 text-amber-400 font-mono font-bold text-xs rounded-full border border-amber-500/40">
+                    {{ job.job_code }}
+                </span>
+                <h1 class="text-2xl font-extrabold text-white">{{ job.project_name }}</h1>
+            </div>
+            <p class="text-xs text-slate-400">
+                <i class="fa-solid fa-user me-1 text-slate-500"></i> Client: <span class="text-white font-semibold">{{ job.customer.company_name or job.customer.contact_person }}</span> | 
+                <i class="fa-solid fa-location-dot me-1 text-amber-400"></i> Site: {{ job.site_address or 'Workshop' }}
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+            <!-- Update Status Form -->
+            <form action="{{ url_for('update_job_status', job_id=job.id) }}" method="POST" class="flex items-center space-x-2">
+                <select name="status" class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-amber-400 focus:outline-none">
+                    <option value="Approved" {% if job.status == 'Approved' %}selected{% endif %}>1. Approved</option>
+                    <option value="Production" {% if job.status == 'Production' %}selected{% endif %}>2. In Production</option>
+                    <option value="Ready" {% if job.status == 'Ready' %}selected{% endif %}>3. Workshop Ready</option>
+                    <option value="Delivered" {% if job.status == 'Delivered' %}selected{% endif %}>4. Delivered to Site</option>
+                    <option value="Installed" {% if job.status == 'Installed' %}selected{% endif %}>5. On-Site Installed</option>
+                    <option value="Completed" {% if job.status == 'Completed' %}selected{% endif %}>6. Completed & Handed Over</option>
+                </select>
+                <button type="submit" class="px-3 py-2 bg-amber-500 text-slate-950 font-bold rounded-xl text-xs hover:bg-amber-400 transition">
+                    Update Status
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Production Stage Lifecycle Tracking -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+        <div class="border-b border-slate-800 pb-4 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-white flex items-center">
+                <i class="fa-solid fa-industry text-amber-500 me-2"></i> Workshop & Site Stage Execution
+            </h2>
+            <span class="text-xs text-slate-400">Cutting → Welding → Grinding → Painting → Assembly → QC → Site Installation</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {% for stage in job.stages %}
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-white flex items-center">
+                            <span class="w-5 h-5 rounded-full bg-slate-800 text-amber-400 flex items-center justify-center text-[10px] me-1.5 font-mono">{{ stage.sequence_order }}</span>
+                            {{ stage.stage_name }}
+                        </span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded
+                            {% if stage.status == 'Completed' %} bg-emerald-500/20 text-emerald-300 border border-emerald-500/30
+                            {% elif stage.status == 'In Progress' %} bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse
+                            {% else %} bg-slate-800 text-slate-500 {% endif %}">
+                            {{ stage.status }}
+                        </span>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+                        <div class="h-2 rounded-full transition-all duration-500 
+                            {% if stage.status == 'Completed' %} bg-emerald-500
+                            {% elif stage.status == 'In Progress' %} bg-gradient-to-r from-amber-500 to-orange-500
+                            {% else %} bg-slate-800 {% endif %}" style="width: {{ stage.completion_pct }}%"></div>
+                    </div>
+
+                    <!-- Form to Update Stage -->
+                    <form action="{{ url_for('update_production_stage', stage_id=stage.id) }}" method="POST" class="space-y-2 pt-1">
+                        <div class="flex items-center space-x-2">
+                            <select name="status" class="w-full bg-slate-900 border border-slate-700 rounded text-[11px] px-2 py-1 text-slate-200">
+                                <option value="Pending" {% if stage.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                <option value="In Progress" {% if stage.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                                <option value="Completed" {% if stage.status == 'Completed' %}selected{% endif %}>Completed</option>
+                            </select>
+                            <input type="number" name="completion_pct" value="{{ stage.completion_pct }}" min="0" max="100" class="w-16 bg-slate-900 border border-slate-700 rounded text-[11px] px-2 py-1 text-amber-400 font-bold text-center">
+                            <span class="text-xs text-slate-400">%</span>
+                        </div>
+                        <button type="submit" class="w-full py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded text-[11px] transition">
+                            Save Stage
+                        </button>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Documents, CAD Drawings & Site Photos Upload Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <!-- Document Upload & Gallery -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+            <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+                <h3 class="text-base font-bold text-white flex items-center">
+                    <i class="fa-solid fa-camera text-blue-400 me-2"></i> CAD Drawings & Job Photographs
+                </h3>
+            </div>
+
+            <!-- Upload Form -->
+            <form action="{{ url_for('upload_job_document', job_id=job.id) }}" method="POST" enctype="multipart/form-data" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Document Category</label>
+                        <select name="file_type" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 text-xs focus:outline-none">
+                            <option value="Drawing">CAD / Technical Drawing</option>
+                            <option value="Photo Before">Site Photo Before Work</option>
+                            <option value="Photo During">Workshop In-Progress Photo</option>
+                            <option value="Photo After">Completed Installation Photo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Choose File</label>
+                        <input type="file" name="file" required class="w-full text-xs text-slate-400">
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs transition">
+                    <i class="fa-solid fa-upload me-1"></i> Upload File / Photo
+                </button>
+            </form>
+
+            <!-- Attachments List -->
+            <div class="space-y-2">
+                {% for doc in job.documents %}
+                    <div class="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs">
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid fa-file-image text-amber-400 text-lg"></i>
+                            <div>
+                                <div class="font-bold text-white">{{ doc.file_name }}</div>
+                                <div class="text-[10px] text-slate-400">{{ doc.file_type }} | Uploaded: {{ doc.uploaded_at.strftime('%d-%b-%Y') }}</div>
+                            </div>
+                        </div>
+                        <a href="{{ url_for('static', filename=doc.file_path) }}" target="_blank" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded font-bold">
+                            View
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Labour Hour Tracking -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+            <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+                <h3 class="text-base font-bold text-white flex items-center">
+                    <i class="fa-solid fa-user-clock text-teal-400 me-2"></i> Worker Labour-Hour Logging
+                </h3>
+            </div>
+
+            <!-- Log Hours Form -->
+            <form action="{{ url_for('log_job_labour', job_id=job.id) }}" method="POST" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-300 uppercase mb-1">Worker Name *</label>
+                        <input type="text" name="worker_name" required placeholder="Ramesh Welder" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-300 uppercase mb-1">Hours Worked</label>
+                        <input type="number" step="0.5" name="hours_worked" required placeholder="8.0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-300 uppercase mb-1">Hourly Rate (₹)</label>
+                        <input type="number" step="1" name="hourly_rate" placeholder="150" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-100 text-xs">
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-lg text-xs transition">
+                    <i class="fa-solid fa-plus me-1"></i> Log Worker Hours
+                </button>
+            </form>
+
+            <!-- Logs Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead class="text-[10px] uppercase bg-slate-950 text-slate-400 border-b border-slate-800">
+                        <tr>
+                            <th class="p-2">Date</th>
+                            <th class="p-2">Worker</th>
+                            <th class="p-2">Hours</th>
+                            <th class="p-2">Cost (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800">
+                        {% for log in job.labour_logs %}
+                            <tr>
+                                <td class="p-2 text-slate-400">{{ log.work_date }}</td>
+                                <td class="p-2 font-semibold text-white">{{ log.worker_name }}</td>
+                                <td class="p-2 text-amber-400 font-bold">{{ log.hours_worked }} hrs</td>
+                                <td class="p-2 font-mono">₹{{ "{:,.2f}".format(log.total_cost) }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

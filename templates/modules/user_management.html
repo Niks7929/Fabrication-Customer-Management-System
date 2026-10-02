@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Admin User & Security Management | Fabrication CMS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+        <div>
+            <div class="flex items-center space-x-2">
+                <h1 class="text-2xl font-extrabold text-white flex items-center">
+                    <i class="fa-solid fa-user-shield text-rose-400 me-2.5"></i> Admin User Security & Role Management
+                </h1>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">Master Admin Control</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Role Allocation Policy: Fixed 1 Admin | Fixed Max 2 Managers | Unlimited Staff | Unlimited Customers.</p>
+        </div>
+        <button onclick="document.getElementById('addUserModal').classList.remove('hidden')" class="px-4 py-2.5 bg-gradient-to-r from-rose-500 to-red-600 text-white font-bold rounded-xl text-xs hover:from-rose-400 shadow-lg transition flex items-center">
+            <i class="fa-solid fa-user-plus me-1.5"></i> Create System Account
+        </button>
+    </div>
+
+    <!-- Role Allocation Stat Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 flex items-center justify-between shadow-lg">
+            <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase">Master Admin</span>
+                <div class="text-xl font-black text-rose-400 mt-0.5">{{ admin_count }} / 1 <span class="text-xs font-normal text-slate-500">(Fixed Max 1)</span></div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold">
+                <i class="fa-solid fa-user-shield"></i>
+            </div>
+        </div>
+
+        <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 flex items-center justify-between shadow-lg">
+            <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase">Project Managers</span>
+                <div class="text-xl font-black text-amber-400 mt-0.5">{{ manager_count }} / 2 <span class="text-xs font-normal text-slate-500">(Fixed Max 2)</span></div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+                <i class="fa-solid fa-user-gear"></i>
+            </div>
+        </div>
+
+        <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 flex items-center justify-between shadow-lg">
+            <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase">Workshop Staff</span>
+                <div class="text-xl font-black text-purple-400 mt-0.5">{{ staff_count }} <span class="text-xs font-normal text-slate-500">(Multiple / Unlimited)</span></div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold">
+                <i class="fa-solid fa-hard-hat"></i>
+            </div>
+        </div>
+
+        <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 flex items-center justify-between shadow-lg">
+            <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase">Registered Customers</span>
+                <div class="text-xl font-black text-emerald-400 mt-0.5">{{ customer_count }} <span class="text-xs font-normal text-slate-500">(Multiple / Unlimited)</span></div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                <i class="fa-solid fa-users"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="text-[11px] uppercase bg-slate-950 text-slate-400 border-b border-slate-800">
+                    <tr>
+                        <th class="py-3.5 px-4">#</th>
+                        <th class="py-3.5 px-4">Full Name & Username</th>
+                        <th class="py-3.5 px-4">Email</th>
+                        <th class="py-3.5 px-4">Phone</th>
+                        <th class="py-3.5 px-4">Security Role</th>
+                        <th class="py-3.5 px-4">Account Status</th>
+                        <th class="py-3.5 px-4">Created Date</th>
+                        <th class="py-3.5 px-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for u in users %}
+                        <tr class="hover:bg-slate-850">
+                            <td class="py-3.5 px-4 font-mono text-slate-500">{{ u.id }}</td>
+                            <td class="py-3.5 px-4">
+                                <div class="font-bold text-white">{{ u.full_name }}</div>
+                                <div class="text-[11px] text-amber-400 font-mono">@{{ u.username }}</div>
+                            </td>
+                            <td class="py-3.5 px-4 text-slate-300">{{ u.email }}</td>
+                            <td class="py-3.5 px-4 text-slate-300">{{ u.phone or 'N/A' }}</td>
+                            <td class="py-3.5 px-4">
+                                <span class="px-2.5 py-1 rounded text-[10px] font-bold uppercase
+                                    {% if u.role == 'admin' %} bg-rose-500/20 text-rose-300 border border-rose-500/40
+                                    {% elif u.role == 'manager' %} bg-amber-500/20 text-amber-300 border border-amber-500/40
+                                    {% elif u.role == 'staff' %} bg-purple-500/20 text-purple-300 border border-purple-500/40
+                                    {% else %} bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 {% endif %}">
+                                    {{ u.role }}
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-4">
+                                {% if u.is_active %}
+                                    <span class="text-emerald-400 font-semibold"><i class="fa-solid fa-circle-check me-1"></i> Active</span>
+                                {% else %}
+                                    <span class="text-rose-400 font-semibold"><i class="fa-solid fa-circle-xmark me-1"></i> Disabled</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3.5 px-4 text-slate-400">{{ u.created_at.strftime('%d-%b-%Y') }}</td>
+                            <td class="py-3.5 px-4">
+                                <button onclick="openResetModal({{ u.id }}, '{{ u.username }}')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold rounded text-xs transition">
+                                    <i class="fa-solid fa-key me-1"></i> Reset Password
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal: Create New User Account -->
+<div id="addUserModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="text-base font-bold text-white"><i class="fa-solid fa-user-plus text-rose-400 me-2"></i> Create System User Account</h3>
+            <button onclick="document.getElementById('addUserModal').classList.add('hidden')" class="text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form action="{{ url_for('admin_users_list') }}" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Full Name *</label>
+                <input type="text" name="full_name" required placeholder="Vikas Patil" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Username *</label>
+                    <input type="text" name="username" required placeholder="vikas_patil" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Security Role</label>
+                    <select name="role" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm">
+                        <option value="customer">Customer</option>
+                        <option value="manager">Manager</option>
+                        <option value="staff">Staff</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Email *</label>
+                    <input type="email" name="email" required placeholder="vikas@apexsteel.com" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Phone</label>
+                    <input type="tel" name="phone" placeholder="+91 98765 00000" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Password *</label>
+                <input type="password" name="password" required placeholder="••••••••••••" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm">
+            </div>
+
+            <div class="text-right pt-2">
+                <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-rose-500 to-red-600 text-white font-bold rounded-xl text-xs hover:from-rose-400 transition">
+                    Create User Account
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Reset Password -->
+<div id="resetPasswordModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="text-base font-bold text-white"><i class="fa-solid fa-key text-amber-400 me-2"></i> Reset Encrypted Password</h3>
+            <button onclick="document.getElementById('resetPasswordModal').classList.add('hidden')" class="text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form action="{{ url_for('admin_reset_password') }}" method="POST" class="space-y-4">
+            <input type="hidden" name="user_id" id="reset_user_id">
+            
+            <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase">Target Account</label>
+                <div id="reset_username" class="text-base font-mono font-bold text-amber-400"></div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">New Encrypted Password *</label>
+                <input type="password" name="new_password" required placeholder="••••••••••••" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm">
+            </div>
+
+            <div class="text-right pt-2">
+                <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold rounded-xl text-xs hover:from-amber-400 transition">
+                    Update Encrypted Password
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openResetModal(userId, username) {
+        document.getElementById('reset_user_id').value = userId;
+        document.getElementById('reset_username').innerText = '@' + username;
+        document.getElementById('resetPasswordModal').classList.remove('hidden');
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Billing & GST Invoices | Fabrication CMS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+        <div>
+            <h1 class="text-2xl font-extrabold text-white flex items-center">
+                <i class="fa-solid fa-file-invoice-dollar text-teal-400 me-2.5"></i> Customer Billing & GST Invoices
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Advance 30%, Milestone-based & Final Tax Invoices with GST 18%, Payment Receipts, and Outstanding Dues tracking.</p>
+        </div>
+        <button onclick="document.getElementById('createInvoiceModal').classList.remove('hidden')" class="px-4 py-2.5 bg-gradient-to-r from-teal-500 to-emerald-600 text-white font-bold rounded-xl text-xs hover:from-teal-400 shadow-lg transition flex items-center">
+            <i class="fa-solid fa-plus me-1.5"></i> Generate Tax Invoice
+        </button>
+    </div>
+
+    <!-- Invoices Table -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="text-[11px] uppercase bg-slate-950 text-slate-400 border-b border-slate-800">
+                    <tr>
+                        <th class="py-3.5 px-4">Invoice #</th>
+                        <th class="py-3.5 px-4">Job Order & Customer</th>
+                        <th class="py-3.5 px-4">Type</th>
+                        <th class="py-3.5 px-4">Date</th>
+                        <th class="py-3.5 px-4">Subtotal</th>
+                        <th class="py-3.5 px-4">GST (18%)</th>
+                        <th class="py-3.5 px-4">Total Invoice</th>
+                        <th class="py-3.5 px-4">Payment Status</th>
+                        <th class="py-3.5 px-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for inv in invoices %}
+                        <tr class="hover:bg-slate-850">
+                            <td class="py-3.5 px-4 font-mono font-bold text-teal-400">{{ inv.invoice_code }}</td>
+                            <td class="py-3.5 px-4">
+                                <div class="font-bold text-white">{{ inv.customer.company_name or inv.customer.contact_person }}</div>
+                                <div class="text-[11px] text-slate-400 font-mono">{{ inv.job.job_code if inv.job else 'N/A' }}</div>
+                            </td>
+                            <td class="py-3.5 px-4"><span class="px-2 py-0.5 bg-slate-950 border border-slate-800 rounded text-slate-300 font-semibold">{{ inv.billing_type }}</span></td>
+                            <td class="py-3.5 px-4 text-slate-400">{{ inv.invoice_date }}</td>
+                            <td class="py-3.5 px-4 font-mono">₹{{ "{:,.2f}".format(inv.subtotal) }}</td>
+                            <td class="py-3.5 px-4 font-mono text-teal-400">₹{{ "{:,.2f}".format(inv.gst_amount) }}</td>
+                            <td class="py-3.5 px-4 font-mono font-bold text-amber-400">₹{{ "{:,.2f}".format(inv.total_amount) }}</td>
+                            <td class="py-3.5 px-4">
+                                <span class="px-2.5 py-1 rounded text-[11px] font-bold
+                                    {% if inv.payment_status == 'Paid' %} bg-emerald-500/20 text-emerald-300 border border-emerald-500/30
+                                    {% elif inv.payment_status == 'Partially Paid' %} bg-amber-500/20 text-amber-300 border border-amber-500/30
+                                    {% else %} bg-rose-500/20 text-rose-300 border border-rose-500/30 {% endif %}">
+                                    {{ inv.payment_status }}
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-4">
+                                {% if inv.payment_status != 'Paid' %}
+                                    <button onclick="openPaymentModal({{ inv.id }}, '{{ inv.invoice_code }}', {{ inv.total_amount - inv.paid_amount }})" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded text-xs transition">
+                                        Record Payment
+                                    </button>
+                                {% else %}
+                                    <span class="text-emerald-400 text-[11px] font-bold"><i class="fa-solid fa-check me-1"></i> Paid</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal: Generate Invoice -->
+<div id="createInvoiceModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="text-base font-bold text-white"><i class="fa-solid fa-file-invoice text-teal-400 me-2"></i> Generate Tax Invoice</h3>
+            <button onclick="document.getElementById('createInvoiceModal').classList.add('hidden')" class="text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form action="{{ url_for('create_invoice') }}" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Select Active Work Order *</label>
+                <select name="job_id" required class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm">
+                    {% for job in jobs %}
+                        <option value="{{ job.id }}">{{ job.job_code }} - {{ job.project_name }} ({{ job.customer.contact_person }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Billing Type</label>
+                    <select name="billing_type" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm">
+                        <option value="Advance">Advance 30%</option>
+                        <option value="Milestone">Milestone 50%</option>
+                        <option value="Partial">Partial Billing</option>
+                        <option value="Final">Final 100% Billing</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Subtotal Excl. Tax (₹)</label>
+                    <input type="number" step="0.01" name="subtotal" required placeholder="100000" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm">
+                </div>
+            </div>
+
+            <div class="text-right pt-2">
+                <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-teal-500 to-emerald-600 text-white font-bold rounded-xl text-xs hover:from-teal-400 transition">
+                    Create GST Invoice
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Record Payment -->
+<div id="paymentModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="text-base font-bold text-white"><i class="fa-solid fa-hand-holding-dollar text-emerald-400 me-2"></i> Record Payment Credit</h3>
+            <button onclick="document.getElementById('paymentModal').classList.add('hidden')" class="text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form action="{{ url_for('record_payment') }}" method="POST" class="space-y-4">
+            <input type="hidden" name="invoice_id" id="modal_invoice_id">
+            
+            <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase">Invoice Code</label>
+                <div id="modal_inv_code" class="text-base font-mono font-bold text-amber-400"></div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Payment Amount (₹)</label>
+                    <input type="number" step="0.01" name="amount" id="modal_pay_amount" required class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 font-mono text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Payment Mode</label>
+                    <select name="payment_mode" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm">
+                        <option value="UPI/GPay">UPI / GPay / PhonePe</option>
+                        <option value="Bank Transfer">Bank Transfer (NEFT/RTGS)</option>
+                        <option value="Cash">Cash</option>
+                        <option value="Cheque">Cheque</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Transaction Ref / UTR #</label>
+                <input type="text" name="reference_no" placeholder="e.g. UPI-99882211" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm">
+            </div>
+
+            <div class="text-right pt-2">
+                <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl text-xs hover:from-emerald-400 transition">
+                    Confirm Payment Record
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openPaymentModal(invId, code, dueAmount) {
+        document.getElementById('modal_invoice_id').value = invId;
+        document.getElementById('modal_inv_code').innerText = code;
+        document.getElementById('modal_pay_amount').value = dueAmount;
+        document.getElementById('paymentModal').classList.remove('hidden');
+    }
+</script>
+{% endblock %}

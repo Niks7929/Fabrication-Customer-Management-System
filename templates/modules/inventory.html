@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory & Material Management | Fabrication CMS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+        <div>
+            <h1 class="text-2xl font-extrabold text-white flex items-center">
+                <i class="fa-solid fa-boxes-stacked text-amber-400 me-2.5"></i> Raw Material Inventory & Consumable Stock
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Manage MS Plates, SS Tubes, Aluminium Channels, Welding Electrodes, Fasteners & Reorder Level Warnings.</p>
+        </div>
+        <button onclick="document.getElementById('addMaterialModal').classList.remove('hidden')" class="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold rounded-xl text-xs hover:from-amber-400 shadow-lg transition flex items-center">
+            <i class="fa-solid fa-plus me-1.5"></i> Add Material Item
+        </button>
+    </div>
+
+    <!-- Inventory Items Table -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="text-[11px] uppercase bg-slate-950 text-slate-400 border-b border-slate-800">
+                    <tr>
+                        <th class="py-3.5 px-4">Code</th>
+                        <th class="py-3.5 px-4">Material Name & Dimensions</th>
+                        <th class="py-3.5 px-4">Category</th>
+                        <th class="py-3.5 px-4">Type</th>
+                        <th class="py-3.5 px-4">Unit Cost</th>
+                        <th class="py-3.5 px-4">Current Stock</th>
+                        <th class="py-3.5 px-4">Reorder Level</th>
+                        <th class="py-3.5 px-4">Supplier</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for mat in items %}
+                        <tr class="hover:bg-slate-850">
+                            <td class="py-3.5 px-4 font-mono font-bold text-amber-400">{{ mat.item_code }}</td>
+                            <td class="py-3.5 px-4">
+                                <div class="font-bold text-white">{{ mat.item_name }}</div>
+                                <div class="text-[11px] text-slate-400">{{ mat.dimensions or 'Standard Size' }}</div>
+                            </td>
+                            <td class="py-3.5 px-4"><span class="px-2 py-0.5 bg-slate-950 border border-slate-800 rounded text-slate-300">{{ mat.category }}</span></td>
+                            <td class="py-3.5 px-4"><span class="px-2 py-0.5 bg-slate-950 border border-slate-800 rounded text-amber-300 font-semibold">{{ mat.material_type }}</span></td>
+                            <td class="py-3.5 px-4 font-mono">₹{{ "{:,.2f}".format(mat.unit_cost) }} / {{ mat.unit }}</td>
+                            <td class="py-3.5 px-4">
+                                <span class="font-bold text-sm {% if mat.quantity_in_stock <= mat.reorder_level %}text-rose-400 animate-pulse{% else %}text-emerald-400{% endif %}">
+                                    {{ mat.quantity_in_stock }} {{ mat.unit }}
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-4 text-slate-400 font-mono">{{ mat.reorder_level }} {{ mat.unit }}</td>
+                            <td class="py-3.5 px-4 text-slate-300">{{ mat.supplier_name or 'N/A' }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal: Add Inventory Item -->
+<div id="addMaterialModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="text-base font-bold text-white"><i class="fa-solid fa-boxes-stacked text-amber-400 me-2"></i> Add Material to Inventory</h3>
+            <button onclick="document.getElementById('addMaterialModal').classList.add('hidden')" class="text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form action="{{ url_for('inventory_list') }}" method="POST" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Item Name *</label>
+                    <input type="text" name="item_name" required placeholder="MS Plate 8mm" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Category</label>
+                    <select name="category" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none">
+                        <option value="Raw Sheet">Raw Sheet / Plate</option>
+                        <option value="Pipe/Tube">Pipe / Hollow Section</option>
+                        <option value="Angle/Beam">Angle / Beam / Channel</option>
+                        <option value="Consumable">Consumable (Gas/Wire)</option>
+                        <option value="Hardware/Fastener">Hardware / Fastener</option>
+                        <option value="Paint/Chemical">Paint / Primer / Chemical</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Material Type</label>
+                    <select name="material_type" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none">
+                        <option value="MS">Mild Steel (MS)</option>
+                        <option value="SS 304">SS 304</option>
+                        <option value="SS 316">SS 316</option>
+                        <option value="Aluminium">Aluminium</option>
+                        <option value="Generic">Generic / Hardware</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Unit of Measurement</label>
+                    <select name="unit" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none">
+                        <option value="Sheet">Sheet</option>
+                        <option value="Kg">Kg</option>
+                        <option value="Meter">Meter</option>
+                        <option value="Piece">Piece</option>
+                        <option value="Litre">Litre</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Unit Cost (₹)</label>
+                    <input type="number" step="0.01" name="unit_cost" required placeholder="4800" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Stock Quantity</label>
+                    <input type="number" step="0.1" name="quantity_in_stock" required placeholder="50" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Reorder Threshold</label>
+                    <input type="number" step="0.1" name="reorder_level" required placeholder="10" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm">
+                </div>
+            </div>
+
+            <div class="text-right pt-2">
+                <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold rounded-xl text-xs hover:from-amber-400 transition">
+                    Save Material Item
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

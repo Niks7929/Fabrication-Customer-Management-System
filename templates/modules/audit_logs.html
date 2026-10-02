@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}System Audit Logs & Security | Fabrication CMS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+        <div>
+            <h1 class="text-2xl font-extrabold text-white flex items-center">
+                <i class="fa-solid fa-clock-rotate-left text-purple-400 me-2.5"></i> System Security & Action Audit Logs
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Audit trail tracking account authentication, quotation changes, work order updates, and stock movements.</p>
+        </div>
+    </div>
+
+    <!-- Audit Logs Table -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="text-[11px] uppercase bg-slate-950 text-slate-400 border-b border-slate-800">
+                    <tr>
+                        <th class="py-3.5 px-4"># Log ID</th>
+                        <th class="py-3.5 px-4">Timestamp</th>
+                        <th class="py-3.5 px-4">User</th>
+                        <th class="py-3.5 px-4">Category</th>
+                        <th class="py-3.5 px-4">Action Event</th>
+                        <th class="py-3.5 px-4">Details</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for log in logs %}
+                        <tr class="hover:bg-slate-850">
+                            <td class="py-3.5 px-4 font-mono font-bold text-slate-500">#{{ log.id }}</td>
+                            <td class="py-3.5 px-4 font-mono text-slate-400">{{ log.timestamp.strftime('%d-%b-%Y %H:%M:%S') }}</td>
+                            <td class="py-3.5 px-4 font-semibold text-white">{{ log.user_name or 'System' }}</td>
+                            <td class="py-3.5 px-4">
+                                <span class="px-2 py-0.5 bg-slate-950 border border-slate-800 rounded text-amber-300 font-mono text-[11px]">
+                                    {{ log.category }}
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-4 font-bold text-amber-400">{{ log.action }}</td>
+                            <td class="py-3.5 px-4 text-slate-300 text-[11px]">{{ log.details or 'N/A' }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

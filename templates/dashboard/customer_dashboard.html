@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Customer Portal Dashboard | Apex Fabrication CMS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    
+    <!-- Profile Banner -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="flex items-center space-x-4">
+            <div class="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center justify-center text-2xl font-bold">
+                <i class="fa-solid fa-user-tie"></i>
+            </div>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <h1 class="text-xl font-extrabold text-white">{{ customer.company_name or customer.contact_person }}</h1>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                        {{ customer.customer_code }}
+                    </span>
+                </div>
+                <p class="text-xs text-slate-400 mt-1">
+                    <i class="fa-solid fa-phone me-1"></i> {{ customer.phone }} | 
+                    <i class="fa-solid fa-envelope me-1"></i> {{ customer.email or 'N/A' }} | 
+                    <i class="fa-solid fa-location-dot me-1 text-amber-400"></i> {{ customer.city }}, {{ customer.state }}
+                </p>
+                {% if customer.gst_number %}
+                    <span class="inline-block mt-2 text-[11px] text-teal-300 font-mono bg-teal-950/60 border border-teal-700/50 px-2 py-0.5 rounded">
+                        GSTIN: {{ customer.gst_number }}
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ url_for('index') }}#quick-quote" class="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold rounded-xl text-xs hover:from-amber-400 hover:to-amber-500 transition shadow-lg flex items-center">
+                <i class="fa-solid fa-plus me-1.5"></i> Submit New Requirement
+            </a>
+            <a href="#raise-ticket-modal" onclick="document.getElementById('ticketModal').classList.remove('hidden')" class="px-4 py-2.5 bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 rounded-xl text-xs font-semibold transition flex items-center">
+                <i class="fa-solid fa-headset me-1.5 text-orange-400"></i> Raise Service Ticket
+            </a>
+        </div>
+    </div>
+
+    <!-- Active Projects & Live Fabrication Stage Tracker -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+        <div class="border-b border-slate-800 pb-4">
+            <h2 class="text-lg font-bold text-white flex items-center">
+                <i class="fa-solid fa-gears text-emerald-400 me-2"></i> Your Active Fabrication Work Orders
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Real-time workshop status & site erection progress</p>
+        </div>
+
+        {% if customer.jobs %}
+            <div class="space-y-6">
+                {% for job in customer.jobs %}
+                    <div class="bg-slate-950 rounded-xl p-5 border border-slate-800 space-y-4">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-900 pb-3">
+                            <div>
+                                <span class="text-xs font-mono text-amber-400 font-bold me-2">{{ job.job_code }}</span>
+                                <h3 class="text-base font-bold text-white inline-block">{{ job.project_name }}</h3>
+                                <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-location-dot me-1 text-slate-500"></i> {{ job.site_address or 'Workshop / On-site' }}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                    {{ job.status }}
+                                </span>
+                                <div class="text-xs text-slate-400 mt-1">Contract: ₹{{ "{:,.2f}".format(job.total_contract_value) }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Stages visual timeline -->
+                        <div>
+                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Production & Site Stage Progress</span>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+                                {% for stage in job.stages %}
+                                    <div class="p-2.5 rounded-lg text-xs border text-center 
+                                        {% if stage.status == 'Completed' %} bg-emerald-950/70 border-emerald-600 text-emerald-300
+                                        {% elif stage.status == 'In Progress' %} bg-amber-950/80 border-amber-500 text-amber-300 animate-pulse
+                                        {% else %} bg-slate-900 border-slate-800 text-slate-500 {% endif %}">
+                                        <div class="font-bold text-[11px] truncate">{{ stage.stage_name }}</div>
+                                        <div class="text-[10px] mt-1">
+                                            {% if stage.status == 'Completed' %}<i class="fa-solid fa-check text-emerald-400"></i> Done
+                                            {% elif stage.status == 'In Progress' %}<i class="fa-solid fa-spinner fa-spin text-amber-400"></i> {{ stage.completion_pct }}%
+                                            {% else %}Pending{% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Documents & Photos uploaded -->
+                        {% if job.documents %}
+                            <div class="pt-2 border-t border-slate-900">
+                                <span class="text-xs font-semibold text-slate-400 block mb-2"><i class="fa-solid fa-paperclip text-amber-400 me-1"></i> Attached Drawings & Site Photos:</span>
+                                <div class="flex flex-wrap gap-2">
+                                    {% for doc in job.documents %}
+                                        <a href="{{ url_for('static', filename=doc.file_path) }}" target="_blank" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-xs text-slate-300 hover:text-amber-400 transition flex items-center">
+                                            <i class="fa-solid fa-file-pdf text-rose-400 me-1.5"></i> {{ doc.file_name }} ({{ doc.file_type }})
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-sm text-slate-400 text-center py-6">No active work orders yet. Submit your requirement to get started!</p>
+        {% endif %}
+    </div>
+
+    <!-- Quotations & Invoices Split View -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <!-- Quotations -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+            <h3 class="text-base font-bold text-white flex items-center border-b border-slate-800 pb-3">
+                <i class="fa-solid fa-calculator text-purple-400 me-2"></i> Quotations & Estimates
+            </h3>
+            {% if customer.quotations %}
+                <div class="space-y-3">
+                    {% for qt in customer.quotations %}
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-mono font-bold text-purple-400">{{ qt.quote_code }}</span>
+                                <div class="text-sm font-bold text-white mt-0.5">Total: ₹{{ "{:,.2f}".format(qt.total_amount) }}</div>
+                                <div class="text-xs text-slate-400">GST 18% included</div>
+                            </div>
+                            <div class="text-right">
+                                <span class="px-2.5 py-1 rounded text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                    {{ qt.status }}
+                                </span>
+                                <div class="mt-2 flex items-center justify-end space-x-2">
+                                    <a href="{{ url_for('view_quotation', quote_id=qt.id) }}" class="px-2.5 py-1 bg-purple-900/60 text-purple-200 hover:bg-purple-800 rounded text-xs font-bold transition">
+                                        View Quote
+                                    </a>
+                                    {% if qt.status == 'Sent' %}
+                                        <a href="{{ url_for('customer_approve_quote', quote_id=qt.id) }}" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold transition">
+                                            <i class="fa-solid fa-check me-1"></i> Accept & Approve
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-xs text-slate-500 py-4">No quotations generated yet.</p>
+            {% endif %}
+        </div>
+
+        <!-- Invoices & Payments -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+            <h3 class="text-base font-bold text-white flex items-center border-b border-slate-800 pb-3">
+                <i class="fa-solid fa-file-invoice-dollar text-teal-400 me-2"></i> Invoices & Payment Receipts
+            </h3>
+            {% if customer.invoices %}
+                <div class="space-y-3">
+                    {% for inv in customer.invoices %}
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-mono font-bold text-teal-400">{{ inv.invoice_code }}</span>
+                                <div class="text-sm font-bold text-white mt-0.5">₹{{ "{:,.2f}".format(inv.total_amount) }} ({{ inv.billing_type }})</div>
+                                <div class="text-xs text-slate-400">Date: {{ inv.invoice_date }}</div>
+                            </div>
+                            <div class="text-right">
+                                <span class="px-2.5 py-1 rounded text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                    {{ inv.payment_status }}
+                                </span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-xs text-slate-500 py-4">No invoices issued yet.</p>
+            {% endif %}
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Service Ticket Modal -->
+<div id="ticketModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="text-base font-bold text-white"><i class="fa-solid fa-headset text-orange-400 me-2"></i> Raise Service / Complaint Ticket</h3>
+            <button onclick="document.getElementById('ticketModal').classList.add('hidden')" class="text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form action="{{ url_for('create_service_ticket') }}" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Issue Title / Subject *</label>
+                <input type="text" name="title" required placeholder="e.g. Balcony railing alignment check after installation" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-amber-500">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Detailed Description *</label>
+                <textarea name="description" rows="3" required placeholder="Describe the service request or issue in detail..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 text-sm focus:outline-none focus:border-amber-500"></textarea>
+            </div>
+
+            <div class="text-right pt-2">
+                <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 font-bold rounded-xl text-xs hover:from-amber-400 transition">
+                    Submit Ticket
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

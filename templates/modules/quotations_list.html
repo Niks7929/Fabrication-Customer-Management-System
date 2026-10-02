@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Quotations & Revisions History | Fabrication CMS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+        <div>
+            <h1 class="text-2xl font-extrabold text-white flex items-center">
+                <i class="fa-solid fa-file-invoice text-purple-400 me-2.5"></i> Quotations & Cost Estimates Directory
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Track quotation status (Draft, Sent, Approved, Revised, Rejected), version history & convert approved quotes into Work Orders.</p>
+        </div>
+        <a href="{{ url_for('quotation_builder') }}" class="px-4 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold rounded-xl text-xs hover:from-purple-400 shadow-lg transition flex items-center">
+            <i class="fa-solid fa-plus me-1.5"></i> Build New Quotation
+        </a>
+    </div>
+
+    <!-- Quotations Table -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="text-[11px] uppercase bg-slate-950 text-slate-400 border-b border-slate-800">
+                    <tr>
+                        <th class="py-3.5 px-4">Quote Code</th>
+                        <th class="py-3.5 px-4">Customer</th>
+                        <th class="py-3.5 px-4">Version</th>
+                        <th class="py-3.5 px-4">Subtotal</th>
+                        <th class="py-3.5 px-4">GST (18%)</th>
+                        <th class="py-3.5 px-4">Total Amount</th>
+                        <th class="py-3.5 px-4">Status</th>
+                        <th class="py-3.5 px-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for qt in quotations %}
+                        <tr class="hover:bg-slate-850">
+                            <td class="py-3.5 px-4 font-mono font-bold text-purple-400">{{ qt.quote_code }}</td>
+                            <td class="py-3.5 px-4 font-semibold text-white">{{ qt.customer.company_name or qt.customer.contact_person }}</td>
+                            <td class="py-3.5 px-4"><span class="px-2 py-0.5 bg-slate-950 border border-slate-800 rounded font-mono text-slate-400 text-[11px]">{{ qt.version }}</span></td>
+                            <td class="py-3.5 px-4 font-mono">₹{{ "{:,.2f}".format(qt.subtotal) }}</td>
+                            <td class="py-3.5 px-4 font-mono text-teal-400">₹{{ "{:,.2f}".format(qt.gst_amount) }}</td>
+                            <td class="py-3.5 px-4 font-mono font-bold text-amber-400">₹{{ "{:,.2f}".format(qt.total_amount) }}</td>
+                            <td class="py-3.5 px-4">
+                                <span class="px-2.5 py-1 rounded text-[11px] font-bold
+                                    {% if qt.status == 'Approved' %} bg-emerald-500/20 text-emerald-300 border border-emerald-500/30
+                                    {% elif qt.status == 'Sent' %} bg-purple-500/20 text-purple-300 border border-purple-500/30
+                                    {% elif qt.status == 'Rejected' %} bg-rose-500/20 text-rose-300 border border-rose-500/30
+                                    {% else %} bg-slate-800 text-slate-400 {% endif %}">
+                                    {{ qt.status }}
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-4 space-x-2">
+                                <a href="{{ url_for('view_quotation', quote_id=qt.id) }}" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded font-bold transition">
+                                    View / Print &rarr;
+                                </a>
+                                {% if qt.status != 'Approved' and current_user.role in ['admin', 'manager'] %}
+                                    <a href="{{ url_for('convert_quote_to_job', quote_id=qt.id) }}" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold transition">
+                                        Approve & Work Order
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
